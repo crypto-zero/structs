@@ -1,11 +1,8 @@
-# Archived project. No maintenance. 
+# Goodbye is new beginning.
 
-This project is not maintained anymore and is archived. Feel free to fork and
-make your own changes if needed. For more detail read my blog post: [Taking an indefinite sabbatical from my projects](https://arslan.io/2018/10/09/taking-an-indefinite-sabbatical-from-my-projects/)
+This project is from fatih/structs and thanks all contributions.
 
-Thanks to everyone for their valuable feedback and contributions.
-
-# Structs [![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/fatih/structs) [![Build Status](http://img.shields.io/travis/fatih/structs.svg?style=flat-square)](https://travis-ci.org/fatih/structs) [![Coverage Status](http://img.shields.io/coveralls/fatih/structs.svg?style=flat-square)](https://coveralls.io/r/fatih/structs)
+# Structs [![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/crypto-zero/structs) [![Build Status](http://img.shields.io/travis/crypto-zero/structs.svg?style=flat-square)](https://travis-ci.org/crypto-zero/structs) [![Coverage Status](http://img.shields.io/coveralls/crypto-zero/structs.svg?style=flat-square)](https://coveralls.io/r/crypto-zero/structs)
 
 Structs contains various utilities to work with Go (Golang) structs. It was
 initially used by me to convert a struct into a `map[string]interface{}`. With
@@ -16,7 +13,7 @@ functions or improve the existing code.
 ## Install
 
 ```bash
-go get github.com/fatih/structs
+go get github.com/crypto-zero/structs
 ```
 
 ## Usage and Examples
@@ -162,7 +159,7 @@ for _, f := range s.Fields() {
 
 ## Credits
 
- * [Fatih Arslan](https://github.com/fatih)
+ * [crypto-zero Arslan](https://github.com/crypto-zero)
  * [Cihangir Savas](https://github.com/cihangir)
 
 ## License
