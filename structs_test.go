@@ -17,7 +17,7 @@ func TestMapNonStruct(t *testing.T) {
 		}
 	}()
 
-	// this should panic. We are going to recover and and test it
+	// this should panic. We are going to recover and test it
 	_ = Map(foo)
 }
 
