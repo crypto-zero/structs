@@ -82,7 +82,7 @@ func ExampleMap_tags() {
 }
 
 func ExampleMap_omitNested() {
-	// By default field with struct types are processed too. We can stop
+	// By default, field with struct types are processed too. We can stop
 	// processing them via "omitnested" tag option.
 	type Server struct {
 		Name string    `structs:"server_name"`
@@ -154,7 +154,7 @@ func ExampleValues() {
 }
 
 func ExampleValues_omitEmpty() {
-	// By default field with struct types of zero values are processed too. We
+	// By default, field with struct types of zero values are processed too. We
 	// can stop processing them via "omitempty" tag option.
 	type Server struct {
 		Name     string `structs:",omitempty"`
@@ -169,7 +169,7 @@ func ExampleValues_omitEmpty() {
 
 	m := Values(s)
 
-	// values contains only the Location field
+	// value contains only the Location field
 	fmt.Printf("Values: %+v\n", m)
 	// Output:
 	// Values: [Ankara]
