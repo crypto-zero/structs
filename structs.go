@@ -425,7 +425,69 @@ func (s *Struct) structFields() []reflect.StructField {
 	return f
 }
 
+func (s *Struct) FillStruct(m map[string]interface{}) (err error) {
+	emptyValue := reflect.Value{}
+	for k, v := range m {
+		f, ok := s.FieldOk(k)
+		if !ok {
+			continue
+		}
+		vt := reflect.TypeOf(v)
+		ft := f.value.Type()
 
+		var set func(ft reflect.Type) (val reflect.Value, err error)
+		set = func(ft reflect.Type) (val reflect.Value, err error) {
+			switch ft.Kind() {
+			case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32,
+				reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32,
+				reflect.Uint64, reflect.Uintptr, reflect.Float32, reflect.Float64, reflect.Complex64,
+				reflect.Complex128, reflect.String, reflect.UnsafePointer,
+				// should we check type cast?
+				reflect.Array, reflect.Slice, reflect.Map,
+				// ???
+				reflect.Chan, reflect.Func,
+				// ?????
+				reflect.Interface:
+
+				if !ft.AssignableTo(vt) {
+					return emptyValue, nil
+				}
+				return reflect.ValueOf(v), nil
+			case reflect.Struct:
+				sm, ok := v.(map[string]interface{})
+				if !ok {
+					return emptyValue, nil
+				}
+				fv := reflect.New(ft)
+				if err = New(fv.Interface()).FillStruct(sm); err != nil {
+					return emptyValue, err
+				}
+				return fv, nil
+			case reflect.Ptr:
+				val, err = set(ft.Elem())
+				if err != nil {
+					return emptyValue, err
+				}
+				if val != emptyValue {
+					return val, nil
+				}
+				return val, err
+			}
+			return emptyValue, nil
+		}
+
+		actual, err := set(ft)
+		if err != nil {
+			return err
+		}
+		if actual != emptyValue {
+			if err = f.Set(actual.Interface()); err != nil {
+				return err
+			}
+		}
+	}
+	return
+}
 
 func strctVal(s interface{}) reflect.Value {
 	v := reflect.ValueOf(s)

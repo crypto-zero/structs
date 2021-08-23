@@ -1451,3 +1451,43 @@ func TestMap_InterfaceTypeWithMapValue(t *testing.T) {
 
 	_ = Map(a)
 }
+
+func TestNestedFillStruct(t *testing.T) {
+	type Collar struct {
+		Engraving string
+	}
+
+	type Dog struct {
+		Name   string
+		Collar *Collar
+	}
+
+	type Person struct {
+		Name string
+		Dog  *Dog
+	}
+
+	personWithDogWithCollar := &Person{
+		Name: "Kon",
+		Dog: &Dog{
+			Name: "Ruffles",
+			Collar: &Collar{
+				Engraving: "If lost, call Kon",
+			},
+		},
+	}
+
+	personB := new(Person)
+
+	m := Map(personWithDogWithCollar)
+	if err := New(personB).FillStruct(m); err != nil {
+		t.Errorf("why???? %v\n", err)
+	}
+	if *personB == *personWithDogWithCollar {
+		t.Error("should be same!")
+	}
+
+	mb := Map(personB)
+	t.Logf("person A: %v\n", m)
+	t.Logf("person B: %v\n", mb)
+}
