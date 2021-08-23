@@ -159,8 +159,7 @@ for _, f := range s.Fields() {
 
 ## Credits
 
- * [crypto-zero Arslan](https://github.com/crypto-zero)
- * [Cihangir Savas](https://github.com/cihangir)
+ * [crypto-zero](https://github.com/crypto-zero)
 
 ## License
 
