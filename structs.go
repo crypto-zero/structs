@@ -425,8 +425,58 @@ func (s *Struct) structFields() []reflect.StructField {
 	return f
 }
 
-func (s *Struct) FillStruct(m map[string]interface{}) (err error) {
-	emptyValue := reflect.Value{}
+var (
+	emptyValue = reflect.Value{}
+)
+
+func (s *Struct) assignableBaseValue(ft, vt reflect.Type, v interface{}) reflect.Value {
+	switch ft.Kind() {
+	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32,
+		reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32,
+		reflect.Uint64, reflect.Uintptr, reflect.Float32, reflect.Float64, reflect.Complex64,
+		reflect.Complex128, reflect.String, reflect.UnsafePointer,
+		// should we check type cast?
+		reflect.Array, reflect.Slice, reflect.Map,
+		// ???
+		reflect.Chan, reflect.Func,
+		// ?????
+		reflect.Interface:
+		if !ft.AssignableTo(vt) {
+			return emptyValue
+		}
+		return reflect.ValueOf(v)
+	default:
+		return emptyValue
+	}
+}
+
+func (s *Struct) fillField(ft, vt reflect.Type, v interface{}) (fv reflect.Value) {
+	if ft.Kind() == reflect.Struct {
+		sm, ok := v.(map[string]interface{})
+		if !ok {
+			return
+		}
+		// fill child structs
+		fv = reflect.New(ft)
+		New(fv.Interface()).FillStruct(sm)
+		// return struct actual value. let previous caller deal with pointer of struct.
+		return fv.Elem()
+	}
+	// we find assignable value from origin field type next level
+	if ft.Kind() == reflect.Ptr {
+		fv = s.fillField(ft.Elem(), vt, v)
+		if fv != emptyValue && fv.CanAddr() {
+			fv = fv.Addr()
+		}
+		if !ft.AssignableTo(fv.Type()) {
+			return emptyValue
+		}
+		return fv
+	}
+	return s.assignableBaseValue(ft, vt, v)
+}
+
+func (s *Struct) FillStruct(m map[string]interface{}) {
 	for k, v := range m {
 		f, ok := s.FieldOk(k)
 		if !ok {
@@ -434,56 +484,9 @@ func (s *Struct) FillStruct(m map[string]interface{}) (err error) {
 		}
 		vt := reflect.TypeOf(v)
 		ft := f.value.Type()
-
-		var set func(ft reflect.Type) (val reflect.Value, err error)
-		set = func(ft reflect.Type) (val reflect.Value, err error) {
-			switch ft.Kind() {
-			case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32,
-				reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32,
-				reflect.Uint64, reflect.Uintptr, reflect.Float32, reflect.Float64, reflect.Complex64,
-				reflect.Complex128, reflect.String, reflect.UnsafePointer,
-				// should we check type cast?
-				reflect.Array, reflect.Slice, reflect.Map,
-				// ???
-				reflect.Chan, reflect.Func,
-				// ?????
-				reflect.Interface:
-
-				if !ft.AssignableTo(vt) {
-					return emptyValue, nil
-				}
-				return reflect.ValueOf(v), nil
-			case reflect.Struct:
-				sm, ok := v.(map[string]interface{})
-				if !ok {
-					return emptyValue, nil
-				}
-				fv := reflect.New(ft)
-				if err = New(fv.Interface()).FillStruct(sm); err != nil {
-					return emptyValue, err
-				}
-				return fv, nil
-			case reflect.Ptr:
-				val, err = set(ft.Elem())
-				if err != nil {
-					return emptyValue, err
-				}
-				if val != emptyValue {
-					return val, nil
-				}
-				return val, err
-			}
-			return emptyValue, nil
-		}
-
-		actual, err := set(ft)
-		if err != nil {
-			return err
-		}
-		if actual != emptyValue {
-			if err = f.Set(actual.Interface()); err != nil {
-				return err
-			}
+		val := s.fillField(ft, vt, v)
+		if val != emptyValue {
+			f.value.Set(val)
 		}
 	}
 	return

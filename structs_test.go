@@ -1462,9 +1462,24 @@ func TestNestedFillStruct(t *testing.T) {
 		Collar *Collar
 	}
 
+	type XDog struct {
+		Name   string
+		Collar Collar
+	}
+
 	type Person struct {
 		Name string
 		Dog  *Dog
+	}
+
+	type PersonX struct {
+		Name string
+		Dog  Dog
+	}
+
+	type XMan struct {
+		Name string
+		Dog  XDog
 	}
 
 	personWithDogWithCollar := &Person{
@@ -1476,18 +1491,30 @@ func TestNestedFillStruct(t *testing.T) {
 			},
 		},
 	}
-
 	personB := new(Person)
+	personC := new(PersonX)
+	personD := new(XMan)
 
-	m := Map(personWithDogWithCollar)
-	if err := New(personB).FillStruct(m); err != nil {
-		t.Errorf("why???? %v\n", err)
-	}
-	if *personB == *personWithDogWithCollar {
-		t.Error("should be same!")
-	}
+	ma := Map(personWithDogWithCollar)
 
+	New(personB).FillStruct(ma)
 	mb := Map(personB)
-	t.Logf("person A: %v\n", m)
-	t.Logf("person B: %v\n", mb)
+
+	New(personC).FillStruct(ma)
+	mc := Map(personC)
+
+	New(personD).FillStruct(ma)
+	md := Map(personD)
+
+	if fmt.Sprintf("%v", ma) != fmt.Sprintf("%v", mb) {
+		t.Error("map a and map b should be same!")
+	}
+
+	if fmt.Sprintf("%v", ma) != fmt.Sprintf("%v", mc) {
+		t.Error("map a and map c should be same!")
+	}
+
+	if fmt.Sprintf("%v", ma) != fmt.Sprintf("%v", md) {
+		t.Error("map a and map d should be same!")
+	}
 }
