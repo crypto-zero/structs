@@ -429,12 +429,27 @@ var (
 	emptyValue = reflect.Value{}
 )
 
-func (s *Struct) assignableBaseValue(ft, vt reflect.Type, v interface{}) reflect.Value {
+type FillStructTransformHook func(ft, vt reflect.Type, v interface{}) interface{}
+
+func (s *Struct) assignableBaseValue(ft, vt reflect.Type, v interface{},
+	hook FillStructTransformHook) reflect.Value {
+	if hook != nil {
+		v = hook(ft, vt, v)
+	}
+	val := reflect.ValueOf(v)
 	switch ft.Kind() {
-	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32,
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32,
 		reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32,
 		reflect.Uint64, reflect.Uintptr, reflect.Float32, reflect.Float64, reflect.Complex64,
-		reflect.Complex128, reflect.String, reflect.UnsafePointer,
+		reflect.Complex128:
+		if ft.ConvertibleTo(vt) {
+			return val.Convert(ft)
+		}
+		if !ft.AssignableTo(vt) {
+			return emptyValue
+		}
+		return val
+	case reflect.Bool, reflect.String, reflect.UnsafePointer,
 		// should we check type cast?
 		reflect.Array, reflect.Slice, reflect.Map,
 		// ???
@@ -444,13 +459,14 @@ func (s *Struct) assignableBaseValue(ft, vt reflect.Type, v interface{}) reflect
 		if !ft.AssignableTo(vt) {
 			return emptyValue
 		}
-		return reflect.ValueOf(v)
+		return val
 	default:
 		return emptyValue
 	}
 }
 
-func (s *Struct) fillField(ft, vt reflect.Type, v interface{}) (fv reflect.Value) {
+func (s *Struct) fillField(ft, vt reflect.Type, v interface{}, hook FillStructTransformHook,
+) (fv reflect.Value) {
 	if ft.Kind() == reflect.Struct {
 		sm, ok := v.(map[string]interface{})
 		if !ok {
@@ -464,7 +480,7 @@ func (s *Struct) fillField(ft, vt reflect.Type, v interface{}) (fv reflect.Value
 	}
 	// we find assignable value from origin field type next level
 	if ft.Kind() == reflect.Ptr {
-		fv = s.fillField(ft.Elem(), vt, v)
+		fv = s.fillField(ft.Elem(), vt, v, hook)
 		if fv != emptyValue && fv.CanAddr() {
 			fv = fv.Addr()
 		}
@@ -473,10 +489,10 @@ func (s *Struct) fillField(ft, vt reflect.Type, v interface{}) (fv reflect.Value
 		}
 		return fv
 	}
-	return s.assignableBaseValue(ft, vt, v)
+	return s.assignableBaseValue(ft, vt, v, hook)
 }
 
-func (s *Struct) FillStruct(m map[string]interface{}) {
+func (s *Struct) fillStruct(m map[string]interface{}, hook FillStructTransformHook) {
 	for k, v := range m {
 		f, ok := s.FieldOk(k)
 		if !ok {
@@ -484,12 +500,23 @@ func (s *Struct) FillStruct(m map[string]interface{}) {
 		}
 		vt := reflect.TypeOf(v)
 		ft := f.value.Type()
-		val := s.fillField(ft, vt, v)
+		val := s.fillField(ft, vt, v, hook)
 		if val != emptyValue {
 			f.value.Set(val)
 		}
 	}
 	return
+}
+
+// FillStruct is reverse operation Map.
+func (s *Struct) FillStruct(m map[string]interface{}) {
+	s.fillStruct(m, nil)
+}
+
+// FillStructTransform is reverse operation Map. hook help for cast value from
+// source type value to target struct field type values.
+func (s *Struct) FillStructTransform(m map[string]interface{}, hook FillStructTransformHook) {
+	s.fillStruct(m, hook)
 }
 
 func strctVal(s interface{}) reflect.Value {
@@ -511,6 +538,18 @@ func strctVal(s interface{}) reflect.Value {
 // refer to Struct types Map() method. It panics if s's kind is not struct.
 func Map(s interface{}) map[string]interface{} {
 	return New(s).Map()
+}
+
+// FillStruct converts the given a map[string]interface{} to struct. For more info
+// refer to Struct types FillStruct() method.
+func FillStruct(from map[string]interface{}, out interface{}) {
+	New(out).FillStruct(from)
+}
+
+// FillStructTransform converts the given a map[string]interface{} to struct. For more info
+// refer to Struct types FillStructTransform() method.
+func FillStructTransform(from map[string]interface{}, out interface{}, hook FillStructTransformHook) {
+	New(out).FillStructTransform(from, hook)
 }
 
 // FillMap is the same as Map. Instead of returning the output, it fills the

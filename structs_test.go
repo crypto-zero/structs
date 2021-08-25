@@ -1452,6 +1452,41 @@ func TestMap_InterfaceTypeWithMapValue(t *testing.T) {
 	_ = Map(a)
 }
 
+func TestFillStruct(t *testing.T) {
+	type Person struct {
+		Name string
+		Age  int8
+	}
+
+	type PersonX struct {
+		Name string
+		Age  uint64
+	}
+
+	personA := &Person{
+		Name: "ks",
+		Age:  8,
+	}
+	personB := new(PersonX)
+	personC := new(Person)
+
+	ma := Map(personA)
+	FillStruct(ma, personB)
+
+	mb := Map(personB)
+
+	FillStruct(ma, personC)
+	mc := Map(personC)
+
+	if fmt.Sprintf("%v", ma) != fmt.Sprintf("%v", mb) {
+		t.Error("map a and map b should be same!")
+	}
+
+	if fmt.Sprintf("%v", ma) != fmt.Sprintf("%v", mc) {
+		t.Error("map a and map c should be same!")
+	}
+}
+
 func TestNestedFillStruct(t *testing.T) {
 	type Collar struct {
 		Engraving string
