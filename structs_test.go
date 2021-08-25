@@ -17,7 +17,7 @@ func TestMapNonStruct(t *testing.T) {
 		}
 	}()
 
-	// this should panic. We are going to recover and and test it
+	// this should panic. We are going to recover and test it
 	_ = Map(foo)
 }
 
@@ -1450,4 +1450,106 @@ func TestMap_InterfaceTypeWithMapValue(t *testing.T) {
 	}()
 
 	_ = Map(a)
+}
+
+func TestFillStruct(t *testing.T) {
+	type Person struct {
+		Name string
+		Age  int8
+	}
+
+	type PersonX struct {
+		Name string
+		Age  uint64
+	}
+
+	personA := &Person{
+		Name: "ks",
+		Age:  8,
+	}
+	personB := new(PersonX)
+	personC := new(Person)
+
+	ma := Map(personA)
+	FillStruct(ma, personB)
+
+	mb := Map(personB)
+
+	FillStruct(ma, personC)
+	mc := Map(personC)
+
+	if fmt.Sprintf("%v", ma) != fmt.Sprintf("%v", mb) {
+		t.Error("map a and map b should be same!")
+	}
+
+	if fmt.Sprintf("%v", ma) != fmt.Sprintf("%v", mc) {
+		t.Error("map a and map c should be same!")
+	}
+}
+
+func TestNestedFillStruct(t *testing.T) {
+	type Collar struct {
+		Engraving string
+	}
+
+	type Dog struct {
+		Name   string
+		Collar *Collar
+	}
+
+	type XDog struct {
+		Name   string
+		Collar Collar
+	}
+
+	type Person struct {
+		Name string
+		Dog  *Dog
+	}
+
+	type PersonX struct {
+		Name string
+		Dog  Dog
+	}
+
+	type XMan struct {
+		Name string
+		Dog  XDog
+	}
+
+	personWithDogWithCollar := &Person{
+		Name: "Kon",
+		Dog: &Dog{
+			Name: "Ruffles",
+			Collar: &Collar{
+				Engraving: "If lost, call Kon",
+			},
+		},
+	}
+	personB := new(Person)
+	personC := new(PersonX)
+	personD := new(XMan)
+
+	ma := Map(personWithDogWithCollar)
+
+	New(personB).FillStruct(ma)
+	mb := Map(personB)
+
+	New(personC).FillStruct(ma)
+	mc := Map(personC)
+
+	New(personD).FillStruct(ma)
+	md := Map(personD)
+
+	if fmt.Sprintf("%v", ma) != fmt.Sprintf("%v", mb) {
+		t.Error("map a and map b should be same!")
+	}
+
+	if fmt.Sprintf("%v", ma) != fmt.Sprintf("%v", mc) {
+		t.Error("map a and map c should be same!")
+	}
+
+	if fmt.Sprintf("%v", ma) != fmt.Sprintf("%v", md) {
+		t.Error("map a and map d should be same!")
+	}
 }
